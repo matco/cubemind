@@ -15,7 +15,7 @@ new secret[SECRET_SIZE]
 //store all attempts
 new attempts[MAX_ATTEMPTS][SECRET_SIZE]
 
-//store attemps results
+//store attempts results
 new attempts_results[MAX_ATTEMPTS][SECRET_SIZE]
 
 //store attempts states
@@ -232,7 +232,7 @@ main() {
 						new color_index
 						for(color_index = 0; color_index < sizeof(colors); color_index++) {
 							if(attempts[attempt_index][corner_index] == colors[color_index]) {
-								break;
+								break
 							}
 						}
 						printf("retrieved color [%x] at index [%d]\n", colors[color_index], corner_index)
