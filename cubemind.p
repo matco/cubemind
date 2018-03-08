@@ -150,15 +150,18 @@ has_won(result[SECRET_SIZE]) {
 
 //attempt UI related functions
 draw_attempts() {
-	new i, status, side, orientation[3]
+	new i, status, side, orientation[3], won
 	for(i = 0; i <= attempt_index; i++) {
 		status = attempts_states[i]
 		if(status > 0) {
 			//retrieve side and orientation associated to attempt
 			side = attempts_sides[i]
 			orientation = attempts_orientations[i]
+			//draw attempt in a different way if it's the winning attempt
+			//the winning attemps is necessarilly the last one
+			won = game_status == 1 && i == attempt_index;
 			//draw attempt
-			draw_attempt(attempts[i], side, orientation)
+			draw_attempt(attempts[i], side, orientation, won)
 			//draw attempts result if it has been validated
 			if(status == 2) {
 				draw_attempt_result(attempts_results[i], side, orientation)
@@ -167,7 +170,7 @@ draw_attempts() {
 	}
 }
 
-draw_attempt(attempt[SECRET_SIZE], side, orientation[3]) {
+draw_attempt(attempt[SECRET_SIZE], side, orientation[3], won) {
 	new i, w
 	w = _w(side, 4)
 	WalkerSetDir(w, orientation)
@@ -183,7 +186,13 @@ draw_attempt(attempt[SECRET_SIZE], side, orientation[3]) {
 		WalkerMove(w, corner_index_to_step(i))
 		//draw point
 		SetColor(attempt[i])
-		DrawPoint(w)
+		//make the point flicker if this is the winning attempt
+		if(won) {
+			DrawFlicker(w)
+		}
+		else {
+			DrawPoint(w)
+		}
 	}
 }
 
