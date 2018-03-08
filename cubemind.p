@@ -37,6 +37,12 @@ new attempts_orientations[MAX_ATTEMPTS][3]
 //store current attempt index
 new attempt_index = 0
 
+//store game status
+//0 if the game is being played
+//1 if the game has been won
+//2 if the game has been lost
+new game_status = 0
+
 generate_secret() {
 	for(new i = 0; i < SECRET_SIZE; i++) {
 		secret[i] = colors[GetRnd(sizeof(colors))]
@@ -275,6 +281,10 @@ main() {
 				case 2: {
 					//validate attempt with a double tap
 					if(_is(motion, TAP_DOUBLE)) {
+						//reset game if it has ended (won or lost)
+						if(game_status != 0) {
+							Restart()
+						}
 						//current attempt can be validated only if it's beeing played (it must not have already been validated)
 						if(attempt_state == 1) {
 							Vibrate(150)
@@ -289,8 +299,9 @@ main() {
 							attempts_results[attempt_index] = result
 							//stop game if it is won
 							if(has_won(result)) {
-								Melody("name:d=4,o=5,b=125:p,8p,16b,16a,b")
 								printf("game won\n")
+								Melody("name:d=4,o=5,b=125:p,8p,16b,16a,b")
+								game_status = 1
 							}
 							else {
 								printf("attempt [%d] failed\n", attempt_index)
@@ -300,8 +311,9 @@ main() {
 								}
 								//game is over if there is no more available side (6 attempts)
 								else {
-									Melody("name:d=4,o=5,b=125:p,16p,8b,16a,b")
 									printf("game over\n")
+									Melody("name:d=4,o=5,b=125:p,16p,8b,16a,b")
+									game_status = 2
 								}
 							}
 						}
