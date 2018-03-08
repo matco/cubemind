@@ -29,6 +29,11 @@ new attempts_states[MAX_ATTEMPTS]
 //index of the array matches the attempt index and the associated value is the side on which the attempt has been made
 new attempts_sides[MAX_ATTEMPTS]
 
+//store attempts orientation (as an orientation vector)
+//when a side is selected, the gravity point is but at the bottom of the side using a walker directed to the top (its square index can be 1, 3, 5 or 7)
+//at the same time, the orientation of the walker is stored in this array to be able to find the corner index associated to a square and vice versa
+new attempts_orientations[MAX_ATTEMPTS][3]
+
 //store current attempt index
 new attempt_index = 0
 
@@ -46,34 +51,37 @@ is_corner(square) {
 	return square % 2 == 0 && square != 4
 }
 
-square_to_corner_index(square) {
-	switch(square) {
-		case 2: return 0
-		case 8: return 1
-		case 0: return 2
-		case 6: return 3
+square_to_corner_index(side, orientation[3], square) {
+	new i, w
+	for(i = 0; i < 4; i++) {
+		w = _w(side, 4)
+		WalkerSetDir(w, orientation)
+		WalkerMove(w, corner_index_to_step(i))
+		if(_square(w) == square) {
+			return i
+		}
 	}
 	return -1
 }
 
-corner_index_to_square(index) {
+corner_index_to_step(index) {
 	switch(index) {
-		case 0: return 2
-		case 1: return 8
-		case 2: return 0
-		case 3: return 6
+		case 0: return STEP_UPLEFT
+		case 1: return STEP_UPRIGHT
+		case 2: return STEP_DOWNRIGHT
+		case 3: return STEP_DOWNLEFT
 	}
-	return -1
+	return STEP_NOTHING
 }
 
-result_index_to_square(index) {
+result_index_to_step(index) {
 	switch(index) {
-		case 0: return 1
-		case 1: return 4
-		case 2: return 7
-		case 3: return 5
+		case 0: return STEP_FORWARD
+		case 1: return STEP_LEFT
+		case 2: return STEP_NOTHING
+		case 3: return STEP_RIGHT
 	}
-	return -1
+	return STEP_NOTHING
 }
 
 //attempts related helpers
@@ -136,35 +144,46 @@ has_won(result[]) {
 
 //attempt UI related functions
 draw_attempts() {
-	new i, status, side
+	new i, status, side, orientation[3]
 	for(i = 0; i <= attempt_index; i++) {
 		status = attempts_states[i]
 		if(status > 0) {
-			//retrieve side associated to attempt
+			//retrieve side and orientation associated to attempt
 			side = attempts_sides[i]
+			orientation = attempts_orientations[i]
 			//draw attempt
-			draw_attempt(side, attempts[i])
+			draw_attempt(attempts[i], side, orientation)
 			//draw attempts result if it has been validated
 			if(status == 2) {
-				draw_attempt_result(side, attempts_results[i])
+				draw_attempt_result(attempts_results[i], side, orientation)
 			}
 		}
 	}
 }
 
-draw_attempt(side, attempt[]) {
+draw_attempt(attempt[], side, orientation[3]) {
+	new i, w
+	w = _w(side, 4)
+	WalkerSetDir(w, orientation)
+	WalkerMove(w, STEP_BACKWARDS)
 	//draw gravity point
 	SetColor(BLUE)
-	DrawPoint(_w(side, 3))
+	DrawPoint(w)
 	//draw attempt colors
-	for(new i = 0; i < SECRET_SIZE; i++) {
+	for(i = 0; i < SECRET_SIZE; i++) {
+		//find good square using a walker
+		w = _w(side, 4)
+		WalkerSetDir(w, orientation)
+		WalkerMove(w, corner_index_to_step(i))
+		//draw point
 		SetColor(attempt[i])
-		DrawPoint(_w(side, corner_index_to_square(i)))
+		DrawPoint(w)
 	}
 }
 
-draw_attempt_result(side, result[]) {
-	for(new i = 0; i < SECRET_SIZE; i++) {
+draw_attempt_result(result[], side, orientation[3]) {
+	new i, w
+	for(i = 0; i < SECRET_SIZE; i++) {
 		switch(result[i]) {
 			case 2 : {
 				SetColor(RED)
@@ -174,7 +193,11 @@ draw_attempt_result(side, result[]) {
 			}
 		}
 		if(result[i]) {
-			DrawPoint(_w(side, result_index_to_square(i)))
+			//find good square using a walker
+			w = _w(side, 4)
+			WalkerSetDir(w, orientation)
+			WalkerMove(w, result_index_to_step(i))
+			DrawPoint(w)
 		}
 	}
 }
@@ -198,20 +221,26 @@ main() {
 		new cursor = GetCursor()
 		new side = _side(cursor)
 		new square = _square(cursor)
+		new walker = _w(side, 4)
 		//printf("cursor is [%d], side is [%d], square is [%d]\n", cursor, side, square)
 
 		new attempt_state = attempts_states[attempt_index]
+		new attempt_orientation[3]
+		attempt_orientation = attempts_orientations[attempt_index]
 
 		//determine if a new side is being chosen
 		//it can be the beginning of the game, in which case attempt index has not been initialized yet
 		if(attempt_state == 0 && !is_side_used(side)) {
 			SetColor(BLUE)
-			DrawFlicker(_w(side, 3))
+			//draw the gravity point at the bottom
+			WalkerDirUp(walker)
+			WalkerMove(walker, STEP_BACKWARDS)
+			DrawFlicker(walker)
 		}
 
 		//highlight current cursor if the current attempt is running and the cursor side is the same as the attempt side
 		if(attempt_state == 1 && attempts_sides[attempt_index] == side && is_corner(square)) {
-			SetColor(attempts[attempt_index][square_to_corner_index(square)])
+			SetColor(attempts[attempt_index][square_to_corner_index(side, attempt_orientation, square)])
 			DrawFlicker(cursor)
 		}
 
@@ -227,7 +256,7 @@ main() {
 				case 1: {
 					if(attempt_state == 1 && is_corner(square)) {
 						//retrieve matching corner index
-						new corner_index = square_to_corner_index(square)
+						new corner_index = square_to_corner_index(side, attempt_orientation, square)
 						//retrieve index of current color
 						new color_index
 						for(color_index = 0; color_index < sizeof(colors); color_index++) {
@@ -284,6 +313,10 @@ main() {
 							//choose this side for the attempt
 							printf("store side [%d] for attempt [%d]\n", side, attempt_index)
 							attempts_sides[attempt_index] = side
+							//store attempt orientation
+							WalkerGetDir(walker, attempt_orientation)
+							attempts_orientations[attempt_index] = attempt_orientation
+							printf("store orientation [%d, %d, %d] (gravity point at index [%d]) for attempt [%d]\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], _square(walker), attempt_index)
 							attempts_states[attempt_index] = 1
 							//initialize attempt with arbitrary colors
 							printf("initialize attempt [%d]\n", attempt_index)
