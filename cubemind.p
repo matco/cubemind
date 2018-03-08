@@ -2,6 +2,8 @@
 
 #include <futurocube>
 
+new icon[]=[ICON_MAGIC1, ICON_MAGIC2, 3, 1, 0x00000000, RED, 0x00000000, RED, RED, RED, 0x00000000, 0x00000000, 0x00000000, '''', '''']
+
 //max attempts matches the number of side of the cube (can be eventually decreased, but never increased)
 const MAX_ATTEMPTS = 6
 //secret size is fixed to 4 to use the corner of each side (do not touch this value, it can not be changed)
@@ -223,6 +225,7 @@ main() {
 
 	generate_secret()
 
+	ICON(icon)
 	RegAllSideTaps()
 	RegMotion(TAP_DOUBLE)
 	SetDoubleTapLength(500)
