@@ -203,7 +203,9 @@ draw_attempt_result(result[], side, orientation[3]) {
 }
 
 main() {
+	//initialize variables
 	cellset(attempts_sides, -1)
+
 	generate_secret()
 
 	RegAllSideTaps()
@@ -317,6 +319,7 @@ main() {
 							WalkerGetDir(walker, attempt_orientation)
 							attempts_orientations[attempt_index] = attempt_orientation
 							printf("store orientation [%d, %d, %d] (gravity point at index [%d]) for attempt [%d]\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], _square(walker), attempt_index)
+							//set "in play" status for current attempt
 							attempts_states[attempt_index] = 1
 							//initialize attempt with arbitrary colors
 							printf("initialize attempt [%d]\n", attempt_index)
