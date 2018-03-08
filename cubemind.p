@@ -7,7 +7,7 @@ const MAX_ATTEMPTS = 6
 //secret size is fixed to 4 to use the corner of each side (do not touch this value, it can not be changed)
 const SECRET_SIZE = 4
 //configure colors that will be used for the game
-new colors[]=[cORANGE, cMAGENTA, cPURPLE]
+new colors[3]=[cORANGE, cMAGENTA, cPURPLE]
 
 //store secret as an array of colors
 new secret[SECRET_SIZE]
@@ -94,7 +94,7 @@ is_side_used(side) {
 	return 0
 }
 
-check_attempt(attempt[]) {
+check_attempt(attempt[SECRET_SIZE]) {
 	new i, j
 	//prepare array that will contain attempt result
 	new result[SECRET_SIZE]
@@ -133,7 +133,7 @@ check_attempt(attempt[]) {
 	return result
 }
 
-has_won(result[]) {
+has_won(result[SECRET_SIZE]) {
 	for(new i = 0; i < SECRET_SIZE; i++) {
 		if(result[i] != 2) {
 			return 0
@@ -161,7 +161,7 @@ draw_attempts() {
 	}
 }
 
-draw_attempt(attempt[], side, orientation[3]) {
+draw_attempt(attempt[SECRET_SIZE], side, orientation[3]) {
 	new i, w
 	w = _w(side, 4)
 	WalkerSetDir(w, orientation)
@@ -181,7 +181,7 @@ draw_attempt(attempt[], side, orientation[3]) {
 	}
 }
 
-draw_attempt_result(result[], side, orientation[3]) {
+draw_attempt_result(result[SECRET_SIZE], side, orientation[3]) {
 	new i, w
 	for(i = 0; i < SECRET_SIZE; i++) {
 		switch(result[i]) {
