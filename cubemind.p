@@ -231,7 +231,6 @@ main() {
 		attempt_orientation = attempts_orientations[attempt_index]
 
 		//determine if a new side is being chosen
-		//it can be the beginning of the game, in which case attempt index has not been initialized yet
 		if(attempt_state == 0 && !is_side_used(side)) {
 			SetColor(BLUE)
 			//draw the gravity point at the bottom
@@ -249,13 +248,11 @@ main() {
 		//detect motion
 		new motion = Motion()
 		if(motion) {
-			//retrieve tap side
-			//new tapside
-			//GetTapSide(tapside)
 			new taptype = GetTapType(cursor)
 			switch(taptype) {
 				//side
 				case 1: {
+					//switch color if current attempt is being played and the cursor is at a corner
 					if(attempt_state == 1 && is_corner(square)) {
 						//retrieve matching corner index
 						new corner_index = square_to_corner_index(side, attempt_orientation, square)
@@ -276,10 +273,9 @@ main() {
 				}
 				//top
 				case 2: {
-					//validate attempt
+					//validate attempt with a double tap
 					if(_is(motion, TAP_DOUBLE)) {
-						//check that attempt can be validated
-						//it must not have already been validated
+						//current attempt can be validated only if it's beeing played (it must not have already been validated)
 						if(attempt_state == 1) {
 							Vibrate(150)
 							//lock the attempt
@@ -302,6 +298,7 @@ main() {
 									//prepare new attempt
 									attempt_index++
 								}
+								//game is over if there is no more available side (6 attempts)
 								else {
 									Melody("name:d=4,o=5,b=125:p,16p,8b,16a,b")
 									printf("game over\n")
