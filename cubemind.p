@@ -130,7 +130,8 @@ check_attempt(attempt[SECRET_SIZE]) {
 		if(managed_dots[i] == 0) {
 			//find if color exists elsewhere in secret
 			for(j = 0; j < SECRET_SIZE; j++) {
-				if(i != j && attempt[i] == secret[j]) {
+				//do not compare against secret that have already been managed
+				if(managed_dots[j] == 0 && attempt[i] == secret[j]) {
 					result[result_index] = 1
 					result_index++
 					break
