@@ -43,6 +43,7 @@ new attempt_index = 0
 //0 if the game is being played
 //1 if the game has been won
 //2 if the game has been lost
+//3 if the game has been lost and the user wants to show the secret
 new game_status = 0
 
 //debug function to be able to display color
@@ -173,14 +174,19 @@ draw_attempts() {
 			//retrieve side and orientation associated to attempt
 			side = attempts_sides[i]
 			orientation = attempts_orientations[i]
-			//draw attempt in a different way if it's the winning attempt
-			//the winning attemps is necessarilly the last one
-			won = game_status == 1 && i == attempt_index;
-			//draw attempt
-			draw_attempt(attempts[i], side, orientation, won)
-			//draw attempts result if it has been validated
-			if(status == 2) {
-				draw_attempt_result(attempts_results[i], side, orientation)
+			if(game_status == 3) {
+				draw_secret(side, orientation);
+			}
+			else {
+				//draw attempt in a different way if it's the winning attempt
+				//the winning attemps is necessarilly the last one
+				won = game_status == 1 && i == attempt_index;
+				//draw attempt
+				draw_attempt(attempts[i], side, orientation, won)
+				//draw attempts result if it has been validated
+				if(status == 2) {
+					draw_attempt_result(attempts_results[i], side, orientation)
+				}
 			}
 		}
 	}
@@ -230,6 +236,27 @@ draw_attempt_result(result[SECRET_SIZE], side, orientation[3]) {
 			WalkerMove(w, result_index_to_step(i))
 			DrawPoint(w)
 		}
+	}
+}
+
+draw_secret(side, orientation[3]) {
+	new i, w
+	w = _w(side, 4)
+	WalkerSetDir(w, orientation)
+	WalkerMove(w, STEP_BACKWARDS)
+	//draw gravity point
+	SetColor(BLUE)
+	DrawPoint(w)
+	//draw attempt colors
+	for(i = 0; i < SECRET_SIZE; i++) {
+		//find good square using a walker
+		w = _w(side, 4)
+		WalkerSetDir(w, orientation)
+		WalkerMove(w, corner_index_to_step(i))
+		//draw point
+		SetColor(secret[i])
+		//make the point flicker
+		DrawFlicker(w)
 	}
 }
 
@@ -346,24 +373,37 @@ main() {
 						}
 					}
 					else {
-						//check that attempt side has not been chosen yet
-						if(attempt_state == 0 && !is_side_used(side)) {
-							//choose this side for the attempt
-							printf("store side [%d] for attempt [%d]\n", side, attempt_index)
-							attempts_sides[attempt_index] = side
-							//store attempt orientation
-							WalkerGetDir(walker, attempt_orientation)
-							attempts_orientations[attempt_index] = attempt_orientation
-							printf("store orientation [%d, %d, %d] for attempt [%d] (gravity point at index [%d])\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], attempt_index, _square(walker))
-							//set "in play" status for current attempt
-							attempts_states[attempt_index] = 1
-							//initialize attempt with arbitrary colors
-							printf("initialize attempt [%d]\n", attempt_index)
-							new attempt[SECRET_SIZE]
-							attempts[attempt_index] = attempt
-							for(new i = 0; i < SECRET_SIZE; i++) {
-								attempts[attempt_index][i] = colors[0]
+						//game is being played
+						if(game_status == 0) {
+							//check that attempt side has not been chosen yet
+							if(attempt_state == 0 && !is_side_used(side)) {
+								//choose this side for the attempt
+								printf("store side [%d] for attempt [%d]\n", side, attempt_index)
+								attempts_sides[attempt_index] = side
+								//store attempt orientation
+								WalkerGetDir(walker, attempt_orientation)
+								attempts_orientations[attempt_index] = attempt_orientation
+								printf("store orientation [%d, %d, %d] for attempt [%d] (gravity point at index [%d])\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], attempt_index, _square(walker))
+								//set "in play" status for current attempt
+								attempts_states[attempt_index] = 1
+								//initialize attempt with arbitrary colors
+								printf("initialize attempt [%d]\n", attempt_index)
+								new attempt[SECRET_SIZE]
+								attempts[attempt_index] = attempt
+								for(new i = 0; i < SECRET_SIZE; i++) {
+									attempts[attempt_index][i] = colors[0]
+								}
 							}
+						}
+						//game is lost and attempts are displayed
+						else if(game_status == 2) {
+							printf("switch to display secret\n")
+							game_status = 3
+						}
+						//game is lost and secret are displayed
+						else if(game_status == 3) {
+							printf("switch to display attempts\n")
+							game_status = 2
 						}
 					}
 				}
