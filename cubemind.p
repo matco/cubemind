@@ -45,13 +45,26 @@ new attempt_index = 0
 //2 if the game has been lost
 new game_status = 0
 
+//debug function to be able to display color
+color_to_name(color) {
+	//do not forget to increase the size of the array for colors with a longer name
+	new label[7]
+	switch(color) {
+		case cORANGE: cellcopy(label, "Orange")
+		case cMAGENTA: cellcopy(label, "Magenta")
+		case cPURPLE: cellcopy(label, "Purple")
+	}
+	return label
+}
+
 generate_secret() {
 	for(new i = 0; i < SECRET_SIZE; i++) {
 		secret[i] = colors[GetRnd(sizeof(colors))]
 		//to debug, set secret to the second color
 		//secret[i] = colors[1]
 	}
-	printf("secret generated [%x, %x, %x, %x]\n", secret[0], secret[1], secret[2], secret[3])
+	//printf("secret generated [%x, %x, %x, %x]\n", secret[0], secret[1], secret[2], secret[3]))
+	printf("secret generated [%s, %s, %s, %s]\n", color_to_name(secret[0]), color_to_name(secret[1]), color_to_name(secret[2]), color_to_name(secret[3]))
 }
 
 //cube position helpers
@@ -282,12 +295,12 @@ main() {
 								break
 							}
 						}
-						printf("retrieved color [%x] at index [%d]\n", colors[color_index], corner_index)
+						//printf("retrieved color [%s] at index [%d]\n", color_to_name(colors[color_index]), corner_index)
 						//find next color
 						color_index = (color_index + 1) % sizeof(colors)
 						//switch color
 						attempts[attempt_index][corner_index] = colors[color_index]
-						printf("store color [%x] at index [%d]\n", colors[color_index], corner_index)
+						printf("store color [%s] at index [%d] for attempt [%d]\n", color_to_name(colors[color_index]), corner_index, attempt_index)
 					}
 				}
 				//top
@@ -301,14 +314,15 @@ main() {
 						//current attempt can be validated only if it's beeing played (it must not have already been validated)
 						if(attempt_state == 1) {
 							Vibrate(150)
+							new attempt[SECRET_SIZE]
+							attempt = attempts[attempt_index]
+							printf("validate attempt [%d] with colors [%s, %s, %s, %s]\n", attempt_index, color_to_name(attempt[0]), color_to_name(attempt[1]), color_to_name(attempt[2]), color_to_name(attempt[3]))
 							//lock the attempt
-							printf("lock attempt [%d]\n", attempt_index)
 							attempts_states[attempt_index] = 2
 							//checking attempt and store result
-							printf("check attempt [%d]\n", attempt_index)
 							new result[SECRET_SIZE]
-							result = check_attempt(attempts[attempt_index])
-							printf("store result [%d, %d, %d, %d]\n", result[0], result[1], result[2], result[3])
+							result = check_attempt(attempt)
+							printf("store result [%d, %d, %d, %d] for attempt [%d]\n", result[0], result[1], result[2], result[3], attempt_index)
 							attempts_results[attempt_index] = result
 							//stop game if it is won
 							if(has_won(result)) {
@@ -340,7 +354,7 @@ main() {
 							//store attempt orientation
 							WalkerGetDir(walker, attempt_orientation)
 							attempts_orientations[attempt_index] = attempt_orientation
-							printf("store orientation [%d, %d, %d] (gravity point at index [%d]) for attempt [%d]\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], _square(walker), attempt_index)
+							printf("store orientation [%d, %d, %d] for attempt [%d] (gravity point at index [%d])\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], attempt_index, _square(walker))
 							//set "in play" status for current attempt
 							attempts_states[attempt_index] = 1
 							//initialize attempt with arbitrary colors
