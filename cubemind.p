@@ -178,11 +178,9 @@ draw_attempts() {
 				draw_secret(side, orientation);
 			}
 			else {
-				//draw attempt in a different way if it's the winning attempt
-				//the winning attemps is necessarilly the last one
-				won = game_status == 1 && i == attempt_index;
 				//draw attempt
-				draw_attempt(attempts[i], side, orientation, won)
+				//specify if the attempt is the current attempt and if the game has been won
+				draw_attempt(attempts[i], side, orientation, i == attempt_index, game_status == 1)
 				//draw attempts result if it has been validated
 				if(status == 2) {
 					draw_attempt_result(attempts_results[i], side, orientation)
@@ -192,14 +190,14 @@ draw_attempts() {
 	}
 }
 
-draw_attempt(attempt[SECRET_SIZE], side, orientation[3], won) {
+draw_attempt(attempt[SECRET_SIZE], side, orientation[3], current, won) {
 	new i, w
 	w = _w(side, 4)
 	WalkerSetDir(w, orientation)
 	WalkerMove(w, STEP_BACKWARDS)
 	//draw gravity point
-	SetColor(BLUE)
-	DrawPoint(w)
+	//decrease intensity if this is not the attempt currently being played
+	DrawPC(w, BLUE, current && !won ? 128 : 15)
 	//draw attempt colors
 	for(i = 0; i < SECRET_SIZE; i++) {
 		//find good square using a walker
