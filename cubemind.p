@@ -354,7 +354,8 @@ main() {
 							//stop game if it is won
 							if(has_won(result)) {
 								printf("game won\n")
-								Melody("name:d=4,o=5,b=125:p,8p,16b,16a,b")
+								//play RTTTL melody
+								Melody("won:d=8,o=6,b=200:c,c,c,4g,c,1g")
 								game_status = 1
 							}
 							else {
@@ -366,7 +367,8 @@ main() {
 								//game is over if there is no more available side (6 attempts)
 								else {
 									printf("game over\n")
-									Melody("name:d=4,o=5,b=125:p,16p,8b,16a,b")
+									//play RTTTL melody
+									Melody("lost:d=8,o=4,b=125:f,e,1d")
 									game_status = 2
 								}
 							}
