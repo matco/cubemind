@@ -140,16 +140,18 @@ check_attempt(attempt[SECRET_SIZE]) {
 	//if a dot is a perfect match (color and position) and its colors is also used at another place, result must only indicate that the dot is at the right place
 	//0 means that the dot has not been managed yet
 	//1 means that the dot has already been managed
-	new managed_dots[SECRET_SIZE]
-	cellset(managed_dots, 0)
+	new managed_dots[SECRET_SIZE] = [0]
+	//same for secrets
+	new managed_secrets[SECRET_SIZE] = [0]
 	//find perfect matches first (color and position match)
 	for(i = 0; i < SECRET_SIZE; i++) {
 		if(attempt[i] == secret[i]) {
 			//save the match in result
 			result[result_index] = 2
 			result_index++
-			//register index in managed dots lists
+			//register index in managed dots and managed secrets lists
 			managed_dots[i] = 1
+			managed_secrets[i] = 1
 		}
 	}
 	//then find approximate matches (only color matches), only with dots that have not been managed yet
@@ -158,9 +160,12 @@ check_attempt(attempt[SECRET_SIZE]) {
 			//find if color exists elsewhere in secret
 			for(j = 0; j < SECRET_SIZE; j++) {
 				//do not compare against secret that have already been managed
-				if(managed_dots[j] == 0 && attempt[i] == secret[j]) {
+				if(managed_secrets[j] == 0 && attempt[i] == secret[j]) {
+					//save the match in the result
 					result[result_index] = 1
 					result_index++
+					//register index in managed secrets list
+					managed_secrets[j] = 1
 					break
 				}
 			}
