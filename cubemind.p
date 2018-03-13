@@ -73,15 +73,28 @@ is_corner(square) {
 	return square % 2 == 0 && square != 4
 }
 
-square_to_corner_index(side, orientation[3], square) {
-	new i, w
-	for(i = 0; i < 4; i++) {
-		w = _w(side, 4)
-		WalkerSetDir(w, orientation)
-		WalkerMove(w, corner_index_to_step(i))
-		if(_square(w) == square) {
-			return i
-		}
+differences_to_step(dx, dy) {
+	if(dx <= -1 && dy >= 1) {
+		return STEP_UPLEFT
+	}
+	if(dx >= 1 && dy >= 1) {
+		return STEP_UPRIGHT
+	}
+	if(dx >= 1 && dy <= -1) {
+		return STEP_DOWNRIGHT
+	}
+	if(dx <= -1 && dy <= -1) {
+		return STEP_DOWNLEFT
+	}
+	return STEP_NOTHING
+}
+
+step_to_corner_index(step) {
+	switch(step) {
+		case STEP_UPLEFT: return 0
+		case STEP_UPRIGHT: return 1
+		case STEP_DOWNRIGHT: return 2
+		case STEP_DOWNLEFT: return 3
 	}
 	return -1
 }
@@ -279,7 +292,6 @@ main() {
 		//retrieve cursor and its coordinates
 		new cursor = GetCursor()
 		new side = _side(cursor)
-		new square = _square(cursor)
 		new walker = _w(side, 4)
 		//printf("cursor is [%d], side is [%d], square is [%d]\n", cursor, side, square)
 
@@ -296,10 +308,37 @@ main() {
 			DrawFlicker(walker)
 		}
 
-		//highlight current cursor if the current attempt is running and the cursor side is the same as the attempt side
-		if(attempt_state == 1 && attempts_sides[attempt_index] == side && is_corner(square)) {
-			SetColor(attempts[attempt_index][square_to_corner_index(side, attempt_orientation, square)])
-			DrawFlicker(cursor)
+		new corner_walker, step
+
+		//highlight corner if the current attempt is running and a corner is selected
+		if(attempt_state == 1) {
+			//the orientation of the cube is used to know which corner the user is trying to select
+			//the easy way is to use a cursor, but this is very frustrating for the player because he would need to orient the cube perfectly so the cursor matches the exact position of the corner
+			//as the player only has 4 possible choices (the 4 corners), the goal is to find the "closest" corner according to the cube orientation
+			//the challenge is to find this corner while still considering the orientation of the attempt
+
+			//at the moment, use a walker because it hides the complexity of the orientation of the attempt, but it helps only when the player is "over-orienting" the cube
+			//TODO use raw accelerometer data and do the approriate calculation
+
+			//initialize a walker at the center of the attempt side
+			corner_walker = _w(attempts_sides[attempt_index], 4)
+			//make the walker orientation match the orientation of the attempt
+			WalkerSetDir(corner_walker, attempt_orientation)
+			//retrieve the path to follow to reach the cursor from this walker
+			//this way, even if the cursor is further than the corner, the direction would still be goo
+			//unfortunately, it does not help if the player is "under-orienting" the cube
+			new dx, dy
+			WalkerDiff(corner_walker, cursor, dx, dy)
+			//only consider diagonals steps
+			step = differences_to_step(dx, dy)
+			printf("%d, %d, %d\n", dx, dy, step)
+			//move the walker using the direction found (remember, it's a diagonal step or nothing)
+			WalkerMove(corner_walker, step)
+			//check that the position of the walker now matches a corner
+			if(is_corner(_square(corner_walker))) {
+				SetColor(attempts[attempt_index][step_to_corner_index(step)])
+				DrawFlicker(corner_walker)
+			}
 		}
 
 		//detect motion
@@ -310,9 +349,9 @@ main() {
 				//side
 				case 1: {
 					//switch color if current attempt is being played and the cursor is at a corner
-					if(attempt_state == 1 && is_corner(square)) {
+					if(attempt_state == 1 && is_corner(_square(corner_walker))) {
 						//retrieve matching corner index
-						new corner_index = square_to_corner_index(side, attempt_orientation, square)
+						new corner_index = step_to_corner_index(step)
 						//retrieve index of current color
 						new color_index
 						for(color_index = 0; color_index < sizeof(colors); color_index++) {
