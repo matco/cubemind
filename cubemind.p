@@ -180,7 +180,7 @@ has_won(result[SECRET_SIZE]) {
 
 //attempt UI related functions
 draw_attempts() {
-	new i, status, side, orientation[3], won
+	new i, status, side, orientation[3]
 	for(i = 0; i <= attempt_index; i++) {
 		status = attempts_states[i]
 		if(status > 0) {
