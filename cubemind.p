@@ -331,7 +331,6 @@ main() {
 			WalkerDiff(corner_walker, cursor, dx, dy)
 			//only consider diagonals steps
 			step = differences_to_step(dx, dy)
-			printf("%d, %d, %d\n", dx, dy, step)
 			//move the walker using the direction found (remember, it's a diagonal step or nothing)
 			WalkerMove(corner_walker, step)
 			//check that the position of the walker now matches a corner
