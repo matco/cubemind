@@ -225,7 +225,7 @@ draw_attempt(attempt[SECRET_SIZE], side, orientation[3], current, won) {
 		//draw point
 		SetColor(attempt[i])
 		//make the point flicker if this is the winning attempt
-		if(won) {
+		if(current && won) {
 			DrawFlicker(w)
 		}
 		else {
