@@ -42,9 +42,16 @@ new attempt_index = 0
 //store game status
 //0 if the game is being played
 //1 if the game has been won
-//2 if the game has been lost
-//3 if the game has been lost and the user wants to show the secret
+//2 if the game has been won and the score has already been displayed
+//3 if the game has been lost
+//4 if the game has been lost and the secret is displayed
 new game_status = 0
+
+//store game duration in seconds
+new game_duration
+
+//store delay between the start of the application and the effective start of the game (after the first side has been chosen)
+new game_delay
 
 //debug function to be able to display color
 color_to_name(color) {
@@ -192,7 +199,7 @@ draw_attempts() {
 			//retrieve side and orientation associated to attempt
 			side = attempts_sides[i]
 			orientation = attempts_orientations[i]
-			if(game_status == 3) {
+			if(game_status == 4) {
 				draw_secret(side, orientation);
 			}
 			else {
@@ -375,78 +382,107 @@ main() {
 				case 2: {
 					//validate attempt with a double tap
 					if(_is(motion, TAP_DOUBLE)) {
-						//reset game if it has ended (won or lost)
-						if(game_status != 0) {
-							Restart()
-						}
-						//current attempt can be validated only if it's beeing played (it must not have already been validated)
-						if(attempt_state == 1) {
-							Vibrate(150)
-							new attempt[SECRET_SIZE]
-							attempt = attempts[attempt_index]
-							printf("validate attempt [%d] with colors [%s, %s, %s, %s]\n", attempt_index, color_to_name(attempt[0]), color_to_name(attempt[1]), color_to_name(attempt[2]), color_to_name(attempt[3]))
-							//lock the attempt
-							attempts_states[attempt_index] = 2
-							//checking attempt and store result
-							new result[SECRET_SIZE]
-							result = check_attempt(attempt)
-							printf("store result [%d, %d, %d, %d] for attempt [%d]\n", result[0], result[1], result[2], result[3], attempt_index)
-							attempts_results[attempt_index] = result
-							//stop game if it is won
-							if(has_won(result)) {
-								printf("game won\n")
-								//play RTTTL melody
-								Melody("won:d=8,o=6,b=200:c,c,c,4g,c,1g")
-								game_status = 1
-							}
-							else {
-								printf("attempt [%d] failed\n", attempt_index)
-								if(attempt_index < MAX_ATTEMPTS - 1) {
-									//prepare new attempt
-									attempt_index++
+						switch(game_status) {
+							//game is being played
+							case 0: {
+								//current attempt can be validated only if it's beeing played (it must not have already been validated)
+								if(attempt_state == 1) {
+									Vibrate(150)
+									new attempt[SECRET_SIZE]
+									attempt = attempts[attempt_index]
+									printf("validate attempt [%d] with colors [%s, %s, %s, %s]\n", attempt_index, color_to_name(attempt[0]), color_to_name(attempt[1]), color_to_name(attempt[2]), color_to_name(attempt[3]))
+									//lock the attempt
+									attempts_states[attempt_index] = 2
+									//checking attempt and store result
+									new result[SECRET_SIZE]
+									result = check_attempt(attempt)
+									printf("store result [%d, %d, %d, %d] for attempt [%d]\n", result[0], result[1], result[2], result[3], attempt_index)
+									attempts_results[attempt_index] = result
+									//stop game if it is won
+									if(has_won(result)) {
+										game_duration = GetAppMsecs() / 1000 - game_delay
+										printf("game won in [%d] second(s)\n", game_duration)
+										game_status = 1
+										//play RTTTL melody
+										Melody("won:d=8,o=6,b=200:c,c,c,4g,c,1g")
+									}
+									else {
+										printf("attempt [%d] failed\n", attempt_index)
+										if(attempt_index < MAX_ATTEMPTS - 1) {
+											//prepare new attempt
+											attempt_index++
+										}
+										//game is over if there is no more available side (6 attempts)
+										else {
+											printf("game over\n")
+											game_status = 3
+											//play RTTTL melody
+											Melody("lost:d=8,o=4,b=125:f,e,1d")
+										}
+									}
 								}
-								//game is over if there is no more available side (6 attempts)
-								else {
-									printf("game over\n")
-									//play RTTTL melody
-									Melody("lost:d=8,o=4,b=125:f,e,1d")
-									game_status = 2
-								}
 							}
+							//restart application if game is lost (whether secret is displayed or not) or if score has been displayed
+							case 2, 3, 4:
+								Restart()
 						}
 					}
 					else {
-						//game is being played
-						if(game_status == 0) {
-							//check that attempt side has not been chosen yet
-							if(attempt_state == 0 && !is_side_used(side)) {
-								//choose this side for the attempt
-								printf("store side [%d] for attempt [%d]\n", side, attempt_index)
-								attempts_sides[attempt_index] = side
-								//store attempt orientation
-								WalkerGetDir(walker, attempt_orientation)
-								attempts_orientations[attempt_index] = attempt_orientation
-								printf("store orientation [%d, %d, %d] for attempt [%d] (gravity point at index [%d])\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], attempt_index, _square(walker))
-								//set "in play" status for current attempt
-								attempts_states[attempt_index] = 1
-								//initialize attempt with arbitrary colors
-								printf("initialize attempt [%d]\n", attempt_index)
-								new attempt[SECRET_SIZE]
-								attempts[attempt_index] = attempt
-								for(new i = 0; i < SECRET_SIZE; i++) {
-									attempts[attempt_index][i] = colors[0]
+						switch(game_status) {
+							//game is being played
+							case 0: {
+								//check that attempt side has not been chosen yet
+								if(attempt_state == 0 && !is_side_used(side)) {
+									//store game delay if this is the first attempt
+									if(attempt_index == 0) {
+										game_delay = GetAppMsecs() / 1000
+										printf("start game with a delay of [%d] second(s)\n", game_delay)
+									}
+									//choose this side for the attempt
+									printf("store side [%d] for attempt [%d]\n", side, attempt_index)
+									attempts_sides[attempt_index] = side
+									//store attempt orientation
+									WalkerGetDir(walker, attempt_orientation)
+									attempts_orientations[attempt_index] = attempt_orientation
+									printf("store orientation [%d, %d, %d] for attempt [%d] (gravity point at index [%d])\n", attempt_orientation[0], attempt_orientation[1], attempt_orientation[2], attempt_index, _square(walker))
+									//set "in play" status for current attempt
+									attempts_states[attempt_index] = 1
+									//initialize attempt with arbitrary colors
+									printf("initialize attempt [%d]\n", attempt_index)
+									new attempt[SECRET_SIZE]
+									attempts[attempt_index] = attempt
+									for(new i = 0; i < SECRET_SIZE; i++) {
+										attempts[attempt_index][i] = colors[0]
+									}
 								}
 							}
-						}
-						//game is lost and attempts are displayed
-						else if(game_status == 2) {
-							printf("switch to display secret\n")
-							game_status = 3
-						}
-						//game is lost and secret are displayed
-						else if(game_status == 3) {
-							printf("switch to display attempts\n")
-							game_status = 2
+							//game is won
+							case 1: {
+								//display score if game is won
+								//first, calculate a score between 0 and 999
+								new score
+								//let 160 seconds to the player to find the secret
+								//160 points if the player solves the cube immediately
+								//1 symbolic point if the player exceeds the time
+								score = max(160 - game_duration, 1)
+								//increase score according to number of attempts
+								//the maximum score is 6 * 160 = 960
+								score = score * (6 - attempt_index)
+								printf("score is %d\n", score)
+								Score(score, SCORE_NORMAL, 1, 0)
+								//remember the score has been displayed to be able to restart the game
+								game_status = 2
+							}
+							//game is lost and attempts are displayed
+							case 3: {
+								printf("switch to display secret\n")
+								game_status = 4
+							}
+							//game is lost and secret are displayed
+							case 4: {
+								printf("switch to display attempts\n")
+								game_status = 3
+							}
 						}
 					}
 				}
