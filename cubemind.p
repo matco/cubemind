@@ -190,6 +190,16 @@ has_won(result[SECRET_SIZE]) {
 	return 1
 }
 
+get_score_type(score) {
+	if(score > 700) {
+		return SCORE_WINNER
+	}
+	if(score > 100) {
+		return SCORE_NORMAL
+	}
+	return SCORE_LOSER
+}
+
 //attempt UI related functions
 draw_attempts() {
 	new i, status, side, orientation[3]
@@ -458,18 +468,18 @@ main() {
 							}
 							//game is won
 							case 1: {
-								//display score if game is won
-								//first, calculate a score between 0 and 999
+								//display score if game is won (calculate a score between 0 and 999)
 								new score
-								//let 160 seconds to the player to find the secret
+								//game duration is the main factor of the score
+								//let 320 seconds to the player to find the secret
 								//160 points if the player solves the cube immediately
 								//1 symbolic point if the player exceeds the time
-								score = max(160 - game_duration, 1)
+								score = max(160 - game_duration / 2, 1)
 								//increase score according to number of attempts
 								//the maximum score is 6 * 160 = 960
 								score = score * (6 - attempt_index)
 								printf("score is %d\n", score)
-								Score(score, SCORE_NORMAL, 1, 0)
+								Score(score, get_score_type(score))
 								//remember the score has been displayed to be able to restart the game
 								game_status = 2
 							}
